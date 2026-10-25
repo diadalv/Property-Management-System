@@ -44,4 +44,20 @@ public class Room {
         housekeepingStatus = HousekeepingStatus.INSPECTED;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Room other)) {
+            return false;
+        }
+        return number.equals(other.number);
+    }
+
+    @Override
+    public int hashCode() {
+        return number.hashCode();
+    }
+
 }
