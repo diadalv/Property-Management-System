@@ -1,55 +1,40 @@
 package io.github.diadalv.pms.hotel;
 
+import io.github.diadalv.pms.billing.ChargeType;
+import io.github.diadalv.pms.billing.Folio;
 import io.github.diadalv.pms.guest.Guest;
 import io.github.diadalv.pms.reservation.Reservation;
+import io.github.diadalv.pms.reservation.ReservationRepository;
 import io.github.diadalv.pms.reservation.ReservationStatus;
 import io.github.diadalv.pms.room.Room;
 import io.github.diadalv.pms.room.RoomNotFoundException;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class Hotel {
     private final String name;
     private final Map<String, Room> rooms = new LinkedHashMap<>();
-    private final List<Reservation> reservations = new ArrayList<>();
+    private final ReservationRepository reservationRepository;
+    private final Set<LocalDate> auditedDates = new HashSet<>();
 
-    public Hotel(String name) {
+    public Hotel(String name, ReservationRepository reservationRepository) {
         this.name = name;
+        this.reservationRepository = reservationRepository;
     }
+
+    // ===== Δωμάτια =====
 
     public void addRoom(Room room) {
         if (rooms.containsKey(room.getNumber())) {
             throw new IllegalArgumentException("Room " + room.getNumber() + " already exists");
         }
         rooms.put(room.getNumber(), room);
-    }
-
-    public boolean isAvailable(Room room, LocalDate arrival, LocalDate departure) {
-        for (Reservation reservation : reservations) {
-            if (reservation.getRoom() == room
-                    && reservation.isActive()
-                    && reservation.overlaps(arrival, departure)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public Reservation book(Guest guest, Room room, LocalDate arrival, LocalDate departure) {
-        if (!isAvailable(room, arrival, departure)) {
-            throw new IllegalStateException("Room " + room.getNumber() + " is not available for these dates");
-        }
-        Reservation reservation = new Reservation(guest, room, arrival, departure);
-        reservations.add(reservation);
-        return reservation;
-    }
-
-    public String getName() {
-        return name;
     }
 
     public List<Room> getRooms() {
@@ -64,25 +49,78 @@ public class Hotel {
         return room;
     }
 
+    // ===== Κρατήσεις =====
+
+    public boolean isAvailable(Room room, LocalDate arrival, LocalDate departure) {
+        for (Reservation reservation : reservationRepository.findAll()) {
+            if (reservation.getRoom() == room
+                    && reservation.isActive()
+                    && reservation.overlaps(arrival, departure)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public Reservation book(Guest guest, Room room, LocalDate arrival, LocalDate departure, BigDecimal ratePerNight) {
+        if (!isAvailable(room, arrival, departure)) {
+            throw new IllegalStateException("Room " + room.getNumber() + " is not available for these dates");
+        }
+        Reservation reservation = new Reservation(guest, room, arrival, departure, ratePerNight);
+        reservationRepository.save(reservation);
+        return reservation;
+    }
+
+    // ===== Αφίξεις / In-house / Αναχωρήσεις =====
+
     public List<Reservation> getArrivals(LocalDate date) {
-        return reservations.stream()
+        return reservationRepository.findAll().stream()
                 .filter(reservation -> reservation.getStatus() == ReservationStatus.BOOKED)
                 .filter(reservation -> reservation.getArrivalDate().equals(date))
                 .toList();
     }
 
     public List<Reservation> getInHouse() {
-        return reservations.stream()
+        return reservationRepository.findAll().stream()
                 .filter(reservation -> reservation.getStatus() == ReservationStatus.CHECKED_IN)
                 .toList();
     }
 
     public List<Reservation> getDepartures(LocalDate date) {
-        return reservations.stream()
+        return reservationRepository.findAll().stream()
                 .filter(reservation -> reservation.getStatus() == ReservationStatus.CHECKED_IN
                         && reservation.getDepartureDate().equals(date))
                 .toList();
-
     }
 
+    // ===== Night audit =====
+
+    public void runNightAudit(LocalDate businessDate) {
+        if (auditedDates.contains(businessDate)) {
+            throw new IllegalStateException("Night audit already run for " + businessDate);
+        }
+
+        for (Reservation reservation : getInHouse()) {
+            Folio folio = reservation.getFolio();
+
+            if (folio.hasRoomChargeFor(businessDate)) {
+                continue;
+            }
+
+            folio.postCharge(
+                    businessDate,
+                    ChargeType.ROOM,
+                    "Room " + reservation.getRoom().getNumber() + " - night of " + businessDate,
+                    reservation.getRatePerNight()
+            );
+        }
+
+        auditedDates.add(businessDate);
+    }
+
+    // ===== Getters =====
+
+    public String getName() {
+        return name;
+    }
 }

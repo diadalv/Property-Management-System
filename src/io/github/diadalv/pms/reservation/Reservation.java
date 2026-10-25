@@ -5,6 +5,7 @@ import io.github.diadalv.pms.guest.Guest;
 import io.github.diadalv.pms.room.HousekeepingStatus;
 import io.github.diadalv.pms.room.Room;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
@@ -15,8 +16,9 @@ public class Reservation {
     private final LocalDate departureDate;
     private ReservationStatus status;
     private final Folio folio = new Folio();
+    private final BigDecimal ratePerNight;
 
-    public Reservation(Guest guest, Room room, LocalDate arrivalDate, LocalDate departureDate) {
+    public Reservation(Guest guest, Room room, LocalDate arrivalDate, LocalDate departureDate, BigDecimal ratePerNight) {
         if (!departureDate.isAfter(arrivalDate)) {
             throw new IllegalArgumentException("Departure must be after arrival");
         }
@@ -25,6 +27,7 @@ public class Reservation {
         this.arrivalDate = arrivalDate;
         this.departureDate = departureDate;
         this.status = ReservationStatus.BOOKED;
+        this.ratePerNight = ratePerNight;
     }
 
     public long nights() {
@@ -53,6 +56,10 @@ public class Reservation {
 
     public Folio getFolio() {
         return folio;
+    }
+
+    public BigDecimal getRatePerNight() {
+        return ratePerNight;
     }
 
     public void checkIn() {

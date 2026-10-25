@@ -48,4 +48,8 @@ public class Folio {
     public boolean isSettled() {
         return getBalance().compareTo(BigDecimal.ZERO) == 0;
     }
+    public boolean hasRoomChargeFor(LocalDate date) {
+        return charges.stream()
+                .anyMatch(charge -> charge.type() == ChargeType.ROOM && charge.date().equals(date));
+    }
 }
