@@ -53,7 +53,7 @@ public class Hotel {
 
     public boolean isAvailable(Room room, LocalDate arrival, LocalDate departure) {
         for (Reservation reservation : reservationRepository.findAll()) {
-            if (reservation.getRoom() == room
+            if (reservation.getRoom().equals(room)
                     && reservation.isActive()
                     && reservation.overlaps(arrival, departure)) {
                 return false;
