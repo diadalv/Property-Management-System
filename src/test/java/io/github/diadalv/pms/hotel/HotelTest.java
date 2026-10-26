@@ -1,8 +1,7 @@
-package io.github.diadalv.pms.reservation;
+package io.github.diadalv.pms.hotel;
 
-import io.github.diadalv.pms.billing.ChargeType;
-import io.github.diadalv.pms.billing.Folio;
 import io.github.diadalv.pms.guest.Guest;
+import io.github.diadalv.pms.reservation.InMemoryReservationRepository;
 import io.github.diadalv.pms.room.Room;
 import org.junit.jupiter.api.Test;
 
@@ -11,20 +10,23 @@ import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-class ReservationTest {
+class HotelTest {
 
     @Test
-    void cannotCheckOutWithOpenBalance() {
-        // Given: η Μαρία είναι checked-in και χρωστάει 5€ από το minibar
+    void cannotBookRoomForOverlappingDates() {
+        // Given: η Μαρία έχει το 204 από 5 έως 8 Νοεμβρίου
+        Hotel hotel = new Hotel("Test Hotel", new InMemoryReservationRepository());
         Room room = new Room("204", 2, "Double");
-        Guest maria = new Guest("Maria", "Vlaxopoulou", null, null);
-        Reservation mariaReservation = new Reservation(maria, room,
-                LocalDate.of(2026, 11, 5), LocalDate.of(2026, 11, 8), new BigDecimal("120.00"));
-        mariaReservation.checkIn();
+        hotel.addRoom(room);
 
-        Folio mariasFolio = mariaReservation.getFolio();
-        mariasFolio.postCharge(LocalDate.of(2026, 11, 6), ChargeType.EXTRA, "Mini Bar", new BigDecimal("5.00"));
+        Guest maria = new Guest("Maria", "Papadopoulou", null, null);
+        Guest nikos = new Guest("Nikos", "Georgiou", null, null);
 
-        assertThrows(IllegalStateException.class, () -> mariaReservation.checkOut());
+        hotel.book(maria, room, LocalDate.of(2026, 11, 5), LocalDate.of(2026, 11, 8), new BigDecimal("120.00"));
+
+        // When + Then: ο Νίκος δεν μπορεί να κλείσει το 204 από 7 έως 9
+        assertThrows(IllegalStateException.class, () ->
+                hotel.book(nikos, room, LocalDate.of(2026, 11, 7), LocalDate.of(2026, 11, 9), new BigDecimal("120.00"))
+        );
     }
 }
