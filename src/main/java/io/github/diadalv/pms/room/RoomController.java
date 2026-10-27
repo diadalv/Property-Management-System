@@ -2,6 +2,7 @@ package io.github.diadalv.pms.room;
 
 import io.github.diadalv.pms.hotel.Hotel;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -16,7 +17,14 @@ public class RoomController {
     }
 
     @GetMapping("/rooms")
-    public List<Room> getRooms() {
-        return hotel.getRooms();
+    public List<RoomResponse> getRooms() {
+        return hotel.getRooms().stream()
+                .map(room -> RoomResponse.from(room))
+                .toList();
+    }
+
+    @GetMapping("/rooms/{number}")
+    public RoomResponse getRoom(@PathVariable String number) {
+        return RoomResponse.from(hotel.findRoom(number));
     }
 }
