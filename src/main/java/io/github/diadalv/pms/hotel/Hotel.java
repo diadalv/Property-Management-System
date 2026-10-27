@@ -71,6 +71,10 @@ public class Hotel {
         return reservation;
     }
 
+    public List<Reservation> getAllReservations() {
+        return reservationRepository.findAll();
+    }
+
     // ===== Αφίξεις / In-house / Αναχωρήσεις =====
 
     public List<Reservation> getArrivals(LocalDate date) {
