@@ -44,7 +44,7 @@ public class Hotel {
     public Room findRoom(String number) {
         Room room = rooms.get(number);
         if (room == null) {
-            throw new RoomNotFoundException("Room " + number + " does not exist");
+            throw new RoomNotFoundException(number);
         }
         return room;
     }
