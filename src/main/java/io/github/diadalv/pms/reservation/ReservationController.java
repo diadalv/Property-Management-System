@@ -34,5 +34,19 @@ public class ReservationController {
 
     @GetMapping("/reservations/{id}")
     public ReservationResponse getReservation(@PathVariable UUID id) {return ReservationResponse.from(hotel.findReservation(id));}
+
+    @PostMapping ("/reservations/{id}/check-in")
+    public ReservationResponse checkIn(@PathVariable UUID id) {
+        Reservation reservation = hotel.findReservation(id);
+        reservation.checkIn();
+        return ReservationResponse.from(reservation);
+    }
+
+    @PostMapping("/reservations/{id}/check-out")
+    public ReservationResponse checkOut(@PathVariable UUID id) {
+        Reservation reservation = hotel.findReservation(id);
+        reservation.checkOut();
+        return ReservationResponse.from(reservation);
+    }
 }
 
