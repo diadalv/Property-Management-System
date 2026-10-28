@@ -14,4 +14,12 @@ public class GlobalExceptionHandler {
     public ErrorResponse handleRoomNotFound(RoomNotFoundException e) {
         return new ErrorResponse(e.getMessage());
     }
+
+    @ExceptionHandler(IllegalStateException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse overBooking(IllegalStateException e) {return new ErrorResponse(e.getMessage()); }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleBadRequest(IllegalArgumentException e) {return new ErrorResponse(e.getMessage()); }
 }
