@@ -1,15 +1,12 @@
 package io.github.diadalv.pms.reservation;
 
-import io.github.diadalv.pms.guest.Guest;
-import io.github.diadalv.pms.room.HousekeepingStatus;
-import io.github.diadalv.pms.room.Room;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
-public record ReservationResponse(String guestName, String roomNumber, LocalDate arrivalDate, LocalDate departureDate, ReservationStatus status,  BigDecimal ratePerNight, BigDecimal balance ) {
+public record ReservationResponse(UUID id, String guestName, String roomNumber, LocalDate arrivalDate, LocalDate departureDate, ReservationStatus status, BigDecimal ratePerNight, BigDecimal balance ) {
     public static ReservationResponse from (Reservation reservation) {
-        return new ReservationResponse( reservation.getGuest().fullName(), reservation.getRoom().getNumber(), reservation.getArrivalDate(), reservation.getDepartureDate(), reservation.getStatus(), reservation.getRatePerNight(), reservation.getFolio().getBalance() );
+        return new ReservationResponse( reservation.getId() ,reservation.getGuest().fullName(), reservation.getRoom().getNumber(), reservation.getArrivalDate(), reservation.getDepartureDate(), reservation.getStatus(), reservation.getRatePerNight(), reservation.getFolio().getBalance() );
 
     }
 }
