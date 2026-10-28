@@ -8,8 +8,10 @@ import io.github.diadalv.pms.room.Room;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 public class Reservation {
+    private final UUID id = UUID.randomUUID();
     private final Guest guest;
     private Room room;
     private final LocalDate arrivalDate;
@@ -52,6 +54,10 @@ public class Reservation {
 
     public ReservationStatus getStatus() {
         return status;
+    }
+
+    public UUID getId() {
+        return id;
     }
 
     public Folio getFolio() {

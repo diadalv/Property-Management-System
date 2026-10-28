@@ -4,6 +4,7 @@ import io.github.diadalv.pms.billing.ChargeType;
 import io.github.diadalv.pms.billing.Folio;
 import io.github.diadalv.pms.guest.Guest;
 import io.github.diadalv.pms.reservation.Reservation;
+import io.github.diadalv.pms.reservation.ReservationNotFoundException;
 import io.github.diadalv.pms.reservation.ReservationRepository;
 import io.github.diadalv.pms.reservation.ReservationStatus;
 import io.github.diadalv.pms.room.Room;
@@ -11,11 +12,7 @@ import io.github.diadalv.pms.room.RoomNotFoundException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class Hotel {
     private final String name;
@@ -47,6 +44,13 @@ public class Hotel {
             throw new RoomNotFoundException(number);
         }
         return room;
+    }
+
+    public Reservation findReservation(UUID id) {
+        return getAllReservations().stream()
+                .filter(reservation -> reservation.getId().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new ReservationNotFoundException(id));
     }
 
     // ===== Κρατήσεις =====

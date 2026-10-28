@@ -3,10 +3,12 @@ package io.github.diadalv.pms.reservation;
 import io.github.diadalv.pms.guest.Guest;
 import io.github.diadalv.pms.hotel.Hotel;
 import io.github.diadalv.pms.room.Room;
+import io.github.diadalv.pms.room.RoomResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 public class ReservationController {
@@ -29,5 +31,8 @@ public class ReservationController {
         Reservation addReservation = hotel.book(guestDetails, room , request.arrivalDate(), request.departureDate(), request.ratePerNight());
         return ReservationResponse.from(addReservation);
     }
+
+    @GetMapping("/reservations/{id}")
+    public ReservationResponse getReservation(@PathVariable UUID id) {return ReservationResponse.from(hotel.findReservation(id));}
 }
 
