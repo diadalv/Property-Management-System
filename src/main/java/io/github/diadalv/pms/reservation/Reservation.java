@@ -1,6 +1,8 @@
 package io.github.diadalv.pms.reservation;
 
+import io.github.diadalv.pms.billing.ChargeType;
 import io.github.diadalv.pms.billing.Folio;
+import io.github.diadalv.pms.billing.PaymentMethod;
 import io.github.diadalv.pms.guest.Guest;
 import io.github.diadalv.pms.room.HousekeepingStatus;
 import io.github.diadalv.pms.room.Room;
@@ -107,5 +109,17 @@ public class Reservation {
 
     public boolean overlaps(LocalDate otherArrival, LocalDate otherDeparture) {
         return otherArrival.isBefore(departureDate) && otherDeparture.isAfter(arrivalDate);
+    }
+
+    public void postCharge(LocalDate date, ChargeType type, String description, BigDecimal amount) {
+         requireStatus(ReservationStatus.CHECKED_IN, "Post Charge");
+         folio.postCharge(date, type, description, amount);
+    }
+
+    public void recordPayment(LocalDate date, PaymentMethod method, BigDecimal amount) {
+        if (status != ReservationStatus.BOOKED && status != ReservationStatus.CHECKED_IN) {
+            throw new IllegalStateException("Cannot record payment: reservation is " + status);
+        }
+        folio.recordPayment(date, method, amount);
     }
 }
