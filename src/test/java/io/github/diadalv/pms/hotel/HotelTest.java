@@ -9,14 +9,12 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class HotelTest {
 
     @Test
     void cannotBookRoomForOverlappingDates() {
-        // Given: η Μαρία έχει το 204 από 5 έως 8 Νοεμβρίου
         Hotel hotel = new Hotel("Test Hotel", new InMemoryReservationRepository());
         Room room = new Room("204", 2, "Double");
         hotel.addRoom(room);
@@ -26,7 +24,6 @@ class HotelTest {
 
         hotel.book(maria, room, LocalDate.of(2026, 11, 5), LocalDate.of(2026, 11, 8), new BigDecimal("120.00"));
 
-        // When + Then: ο Νίκος δεν μπορεί να κλείσει το 204 από 7 έως 9
         assertThrows(IllegalStateException.class, () ->
                 hotel.book(nikos, room, LocalDate.of(2026, 11, 7), LocalDate.of(2026, 11, 9), new BigDecimal("120.00"))
         );
@@ -34,7 +31,6 @@ class HotelTest {
 
     @Test
     void sameDayTurnoverIsAllowed() {
-        // Given: στο σύστημα υπάρχει κράτηση της Μαρίας για το 204, από 5 έως 8 Νοεμβρίου
         Hotel hotel = new Hotel("Test Hotel", new InMemoryReservationRepository());
         Room room = new Room("204", 2, "Double");
         hotel.addRoom(room);
@@ -42,10 +38,27 @@ class HotelTest {
         Guest maria = new Guest("Maria", "Vlaxopoulou", null, null);
         hotel.book(maria, room, LocalDate.of(2026, 11, 5), LocalDate.of(2026, 11, 8), new BigDecimal("120.00"));
 
-        // When: κάποιος ρωτάει αν το 204 είναι ελεύθερο από 8 έως 10 Νοεμβρίου
         boolean available = hotel.isAvailable(room, LocalDate.of(2026, 11, 8), LocalDate.of(2026, 11, 10));
 
-        // Then: το σύστημα απαντάει ναι
         assertTrue(available);
+    }
+
+    @Test
+    void secondNightAuditForSameDateIsRejected() {
+        Hotel hotel = new Hotel("Test Hotel", new InMemoryReservationRepository());
+        Room room = new Room("204", 2, "Double");
+        hotel.addRoom(room);
+
+        Guest maria = new Guest("Maria", "Papadopoulou", null, null);
+
+        Reservation mariaReservation = hotel.book(maria, room, LocalDate.of(2026, 11, 5), LocalDate.of(2026, 11, 8), new BigDecimal("120.00"));
+        mariaReservation.checkIn();
+
+        LocalDate auditDate = LocalDate.of(2026, 11, 5);
+        hotel.runNightAudit(auditDate);
+
+        assertThrows(IllegalStateException.class, () -> hotel.runNightAudit(auditDate));
+
+        assertEquals(1, mariaReservation.getFolio().getCharges().size());
     }
 }
