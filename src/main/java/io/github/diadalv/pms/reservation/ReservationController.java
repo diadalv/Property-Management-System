@@ -7,6 +7,7 @@ import io.github.diadalv.pms.billing.FolioResponse;
 import io.github.diadalv.pms.guest.Guest;
 import io.github.diadalv.pms.hotel.Hotel;
 import io.github.diadalv.pms.room.Room;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -70,6 +71,28 @@ public class ReservationController {
         Reservation reservation = hotel.findReservation(id);
         reservation.recordPayment(LocalDate.now(), paymentRequest.method(), paymentRequest.amount());
         return FolioResponse.from(reservation.getFolio());
+    }
+
+    @GetMapping("/reservations/arrivals")
+    public List<ReservationResponse> getArrivals(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        LocalDate day = (date != null) ? date : LocalDate.now();
+        return hotel.getArrivals(day).stream()
+                .map(reservation -> ReservationResponse.from(reservation)).toList();
+    }
+
+    @GetMapping("/reservations/departures")
+    public List<ReservationResponse> getDepartures(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        LocalDate day = (date != null) ? date : LocalDate.now();
+        return hotel.getDepartures(day).stream()
+                .map(reservation -> ReservationResponse.from(reservation)).toList();
+    }
+
+    @GetMapping("/reservations/in-house")
+    public List<ReservationResponse> getInHouse() {
+        return hotel.getInHouse().stream()
+                .map(reservation -> ReservationResponse.from(reservation)).toList();
     }
 }
 
