@@ -7,7 +7,6 @@ import io.github.diadalv.pms.billing.FolioResponse;
 import io.github.diadalv.pms.guest.Guest;
 import io.github.diadalv.pms.hotel.Hotel;
 import io.github.diadalv.pms.room.Room;
-import io.github.diadalv.pms.room.RoomResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
