@@ -1,12 +1,10 @@
 package io.github.diadalv.pms.persistence;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "reservations")
@@ -43,6 +41,9 @@ public class ReservationEntity {
     @Column(name = "rate_per_night")
     private BigDecimal ratePerNight;
 
+    @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FolioEntity> folios = new ArrayList<>();
+
     protected ReservationEntity() {
     }
 
@@ -74,4 +75,11 @@ public class ReservationEntity {
     public BigDecimal getRatePerNight() { return ratePerNight; }
 
     public void setStatus(String status) { this.status = status; }
+
+    public void addFolio(FolioEntity folio) {
+        folios.add(folio);
+        folio.setReservation(this);
+    }
+
+    public List<FolioEntity> getFolios() { return folios; }
 }
