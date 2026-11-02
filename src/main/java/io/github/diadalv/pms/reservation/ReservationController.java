@@ -1,6 +1,5 @@
 package io.github.diadalv.pms.reservation;
 
-import io.github.diadalv.pms.billing.ChargeResponse;
 import io.github.diadalv.pms.billing.CreateChargeRequest;
 import io.github.diadalv.pms.billing.CreatePaymentRequest;
 import io.github.diadalv.pms.billing.FolioResponse;
@@ -40,37 +39,31 @@ public class ReservationController {
     @GetMapping("/reservations/{id}")
     public ReservationResponse getReservation(@PathVariable UUID id) {return ReservationResponse.from(hotel.findReservation(id));}
 
-    @PostMapping ("/reservations/{id}/check-in")
+    @PostMapping("/reservations/{id}/check-in")
     public ReservationResponse checkIn(@PathVariable UUID id) {
-        Reservation reservation = hotel.findReservation(id);
-        reservation.checkIn();
-        return ReservationResponse.from(reservation);
+        return ReservationResponse.from(hotel.checkIn(id));
     }
 
     @PostMapping("/reservations/{id}/check-out")
     public ReservationResponse checkOut(@PathVariable UUID id) {
-        Reservation reservation = hotel.findReservation(id);
-        reservation.checkOut();
-        return ReservationResponse.from(reservation);
+        return ReservationResponse.from(hotel.checkOut(id));
     }
 
     @GetMapping("/reservations/{id}/folio")
     public FolioResponse getFolio(@PathVariable UUID id) {return FolioResponse.from(hotel.findReservation(id).getFolio());}
 
-    @PostMapping ("/reservations/{id}/charges")
+    @PostMapping("/reservations/{id}/charges")
     @ResponseStatus(HttpStatus.CREATED)
     public FolioResponse postCharge(@PathVariable UUID id, @RequestBody CreateChargeRequest chargeRequest) {
-        Reservation reservation = hotel.findReservation(id);
-        reservation.postCharge(LocalDate.now(), chargeRequest.type(), chargeRequest.description(), chargeRequest.amount());
-        return FolioResponse.from(reservation.getFolio());
+        return FolioResponse.from(hotel.postCharge(id, LocalDate.now(),
+                chargeRequest.type(), chargeRequest.description(), chargeRequest.amount()));
     }
 
-    @PostMapping ("/reservations/{id}/payments")
+    @PostMapping("/reservations/{id}/payments")
     @ResponseStatus(HttpStatus.CREATED)
     public FolioResponse postPayment(@PathVariable UUID id, @RequestBody CreatePaymentRequest paymentRequest) {
-        Reservation reservation = hotel.findReservation(id);
-        reservation.recordPayment(LocalDate.now(), paymentRequest.method(), paymentRequest.amount());
-        return FolioResponse.from(reservation.getFolio());
+        return FolioResponse.from(hotel.recordPayment(id, LocalDate.now(),
+                paymentRequest.method(), paymentRequest.amount()));
     }
 
     @GetMapping("/reservations/arrivals")

@@ -2,6 +2,7 @@ package io.github.diadalv.pms.hotel;
 
 import io.github.diadalv.pms.billing.ChargeType;
 import io.github.diadalv.pms.billing.Folio;
+import io.github.diadalv.pms.billing.PaymentMethod;
 import io.github.diadalv.pms.guest.Guest;
 import io.github.diadalv.pms.reservation.Reservation;
 import io.github.diadalv.pms.reservation.ReservationNotFoundException;
@@ -101,6 +102,36 @@ public class Hotel {
                 .toList();
     }
 
+    public Reservation checkIn(UUID id) {
+        Reservation reservation = findReservation(id);
+        reservation.checkIn();
+        reservationRepository.save(reservation);
+        return reservation;
+    }
+
+    public Reservation checkOut(UUID id) {
+        Reservation reservation = findReservation(id);
+        reservation.checkOut();
+        reservationRepository.save(reservation);
+        return reservation;
+    }
+
+    public Folio postCharge(UUID id, LocalDate date, ChargeType type, String description, BigDecimal amount) {
+        Reservation reservation = findReservation(id);
+        reservation.postCharge(date, type, description, amount);
+        reservationRepository.save(reservation);
+        return reservation.getFolio();
+    }
+
+    public Folio recordPayment(UUID id, LocalDate date, PaymentMethod method, BigDecimal amount) {
+        Reservation reservation = findReservation(id);
+        reservation.recordPayment(date, method, amount);
+        reservationRepository.save(reservation);
+        return reservation.getFolio();
+    }
+
+    // ===== Night audit =====
+
     // ===== Night audit =====
 
     public void runNightAudit(LocalDate businessDate) {
@@ -121,6 +152,7 @@ public class Hotel {
                     "Room " + reservation.getRoom().getNumber() + " - night of " + businessDate,
                     reservation.getRatePerNight()
             );
+            reservationRepository.save(reservation);     // ← ΝΕΟ: αποθήκευσε τη χρέωση στη βάση
         }
 
         auditedDates.add(businessDate);
@@ -132,3 +164,4 @@ public class Hotel {
         return name;
     }
 }
+
