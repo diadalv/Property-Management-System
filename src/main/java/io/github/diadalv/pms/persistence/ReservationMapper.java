@@ -9,6 +9,7 @@ import io.github.diadalv.pms.reservation.Reservation;
 import io.github.diadalv.pms.reservation.ReservationStatus;
 import io.github.diadalv.pms.room.Room;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -40,6 +41,26 @@ public class ReservationMapper {
         entity.addFolio(folio);
 
         return entity;
+    }
+
+    public void updateEntity(ReservationEntity entity, Reservation reservation) {
+        entity.setStatus(reservation.getStatus().name());
+
+        FolioEntity folio = entity.getFolios().get(0);
+
+        List<Charge> charges = reservation.getFolio().getCharges();
+        for (int i = folio.getCharges().size(); i < charges.size(); i++) {
+            Charge charge = charges.get(i);
+            folio.addCharge(new ChargeEntity(charge.date(), charge.type().name(),
+                    charge.description(), charge.amount()));
+        }
+
+        List<Payment> payments = reservation.getFolio().getPayments();
+        for (int i = folio.getPayments().size(); i < payments.size(); i++) {
+            Payment payment = payments.get(i);
+            folio.addPayment(new PaymentEntity(payment.date(), payment.method().name(),
+                    payment.amount()));
+        }
     }
 
 
