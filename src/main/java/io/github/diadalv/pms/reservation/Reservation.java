@@ -13,7 +13,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 public class Reservation {
-    private final UUID id = UUID.randomUUID();
+    private final UUID id;
     private final Guest guest;
     private Room room;
     private final LocalDate arrivalDate;
@@ -23,15 +23,26 @@ public class Reservation {
     private final BigDecimal ratePerNight;
 
     public Reservation(Guest guest, Room room, LocalDate arrivalDate, LocalDate departureDate, BigDecimal ratePerNight) {
+        this(UUID.randomUUID(), guest, room, arrivalDate, departureDate, ratePerNight, ReservationStatus.BOOKED);
+    }
+
+    private Reservation(UUID id, Guest guest, Room room, LocalDate arrivalDate, LocalDate departureDate,
+                        BigDecimal ratePerNight, ReservationStatus status) {
         if (!departureDate.isAfter(arrivalDate)) {
             throw new IllegalArgumentException("Departure must be after arrival");
         }
+        this.id = id;
         this.guest = guest;
         this.room = room;
         this.arrivalDate = arrivalDate;
         this.departureDate = departureDate;
-        this.status = ReservationStatus.BOOKED;
         this.ratePerNight = ratePerNight;
+        this.status = status;
+    }
+
+    public static Reservation restore(UUID id, Guest guest, Room room, LocalDate arrivalDate,
+                                      LocalDate departureDate, BigDecimal ratePerNight, ReservationStatus status) {
+        return new Reservation(id, guest, room, arrivalDate, departureDate, ratePerNight, status);
     }
 
     public long nights() {
@@ -41,31 +52,24 @@ public class Reservation {
     public Guest getGuest() {
         return guest;
     }
-
     public Room getRoom() {
         return room;
     }
-
     public LocalDate getArrivalDate() {
         return arrivalDate;
     }
-
     public LocalDate getDepartureDate() {
         return departureDate;
     }
-
     public ReservationStatus getStatus() {
         return status;
     }
-
     public UUID getId() {
         return id;
     }
-
     public Folio getFolio() {
         return folio;
     }
-
     public BigDecimal getRatePerNight() {
         return ratePerNight;
     }
