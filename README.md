@@ -1,0 +1,259 @@
+# Hotel PMS — Property Management System
+
+A hotel **Property Management System** built with **Java** and **Spring Boot**, backed by an **Oracle Database**.
+It covers the core daily operations of a hotel: reservations, check-in and check-out, guest folios (charges and payments), housekeeping, and the night audit.
+
+I worked for several years in hotel operations, using **OPERA PMS** at the front desk. This project is my way of building, from the developer's side, the kind of system I used every day — with the same business rules a real front office depends on.
+
+---
+
+## Features
+
+**Reservations**
+- Create reservations with automatic availability check (no overbooking)
+- Check-in and check-out with business rules:
+  - check-in only for booked reservations and rooms that are not dirty
+  - check-out only when the folio balance is zero
+- Daily lists: arrivals, departures and in-house guests
+
+**Folio (guest account)**
+- View all charges, payments, totals and balance
+- Post charges (only for checked-in guests)
+- Record payments (deposits before arrival, or during the stay)
+- Charges are **append-only**, like in a real PMS: a posted charge is never deleted
+
+**Housekeeping**
+- Mark rooms as clean, dirty or inspected
+- A room can only be inspected when it is clean
+- Check-out automatically marks the room as dirty
+
+**Night audit**
+- Posts the room charge for every in-house guest for a given business date
+- Cannot run twice for the same date, so no guest is charged twice
+
+**API & errors**
+- REST API with JSON
+- Clear error responses: `400` invalid data, `404` not found, `409` business rule conflict
+
+---
+
+## Tech stack
+
+| Area | Technology |
+|---|---|
+| Language | Java 25 |
+| Framework | Spring Boot 4 (Spring Web, Spring Data JPA) |
+| Persistence | Hibernate (JPA) |
+| Database | Oracle AI Database 26ai Free, running in Docker |
+| Build | Maven |
+| Testing | JUnit 5 |
+| Version control | Git & GitHub (ticket-based workflow with pull requests) |
+
+---
+
+## Architecture
+
+```
+┌─────────────┐   HTTP / JSON    ┌──────────────────────────────────────────────┐   JDBC   ┌──────────────┐
+│   Client    │ ───────────────► │              Spring Boot (port 8080)          │ ───────► │   Oracle DB  │
+│ (browser,   │ ◄─────────────── │                                              │ ◄─────── │  (Docker,    │
+│  other app) │                  │  Controllers → Hotel (service) → Repository  │          │  port 1521)  │
+└─────────────┘                  └──────────────────────────────────────────────┘          └──────────────┘
+```
+
+Inside the application, each layer has one responsibility:
+
+```
+Controller          receives HTTP requests, converts JSON ↔ objects (DTOs), delegates to the Hotel
+   │
+   ▼
+Hotel (service)     coordinates the use cases: find → apply business rule → save
+   │
+   ▼
+Domain model        Reservation, Room, Folio, Charge, Payment — all business rules live here
+   │
+   ▼
+Repository          ReservationRepository interface, with two implementations:
+                     • JpaReservationRepository  → Oracle (used by the application)
+                     • InMemoryReservationRepository → in memory (used by unit tests)
+   │
+   ▼
+Persistence         JPA entities + mapper (domain ↔ entity) → Hibernate → Oracle
+```
+
+---
+
+## Design decisions
+
+- **Business rules live in the domain model, not in the controllers.**
+  Controllers only translate HTTP to method calls. Rules such as "no check-out with an open balance" are in `Reservation`, so they apply everywhere and are covered by unit tests.
+
+- **DTOs for the API.**
+  The API never exposes internal classes. Request and response records (`CreateReservationRequest`, `ReservationResponse`, `FolioResponse`...) define the API contract, so the internal model can change without breaking clients.
+
+- **A repository interface with two implementations.**
+  The `Hotel` depends only on the `ReservationRepository` interface. Switching from in-memory storage to Oracle was a one-line change in the configuration, and the in-memory version is kept to keep unit tests fast and independent of a database.
+
+- **Separate JPA entities and a mapper.**
+  Domain classes stay free of persistence concerns (no-argument constructors, non-final fields, annotations). The trade-off is more code: the mapper converts between domain objects and entities, and only inserts new charges when saving.
+
+- **A `folios` table from the start.**
+  The application currently uses one folio per reservation, but the schema already supports several folio windows per reservation, as in OPERA (for example, room charges to the company and extras to the guest).
+
+- **Action endpoints for state changes.**
+  Check-in, check-out and housekeeping actions are `POST` endpoints such as `POST /reservations/{id}/check-in`, instead of letting the client set a status directly. The client requests the action, and the domain decides whether it is allowed.
+
+---
+
+## Database schema
+
+```
+ROOMS ──< RESERVATIONS ──< FOLIOS ──< CHARGES
+                                  └──< PAYMENTS
+```
+
+| Table | Purpose |
+|---|---|
+| `rooms` | room number, floor, type, housekeeping status |
+| `reservations` | guest details, room, dates, status, rate per night |
+| `folios` | guest accounts per reservation (window number) |
+| `charges` | room nights, extras, corrections |
+| `payments` | cash, card or bank transfer |
+
+The balance is **not stored**: it is always calculated from charges and payments, so it can never get out of sync.
+The schema is created automatically on startup from `src/main/resources/schema.sql`.
+
+---
+
+## Getting started
+
+### Prerequisites
+- Java 25
+- Docker
+
+Maven does not need to be installed: the project includes the Maven Wrapper (`mvnw` / `mvnw.cmd`).
+
+### 1. Start the database
+
+```bash
+docker run -d --name pms-oracle -p 1521:1521 \
+  -e ORACLE_PASSWORD=oracle \
+  -e APP_USER=pms -e APP_USER_PASSWORD=pms \
+  -v pms-oracle-data:/opt/oracle/oradata \
+  gvenzl/oracle-free:slim
+```
+
+Wait until the database is ready:
+
+```bash
+docker logs -f pms-oracle
+# wait for: DATABASE IS READY TO USE!
+```
+
+### 2. Run the application
+
+```bash
+./mvnw spring-boot:run        # macOS / Linux
+.\mvnw.cmd spring-boot:run    # Windows
+```
+
+The API is available at `http://localhost:8080`. On the first start, sample rooms and reservations are created.
+
+> The database credentials are read from the environment variables `DB_USERNAME` and `DB_PASSWORD`, with local defaults for development.
+
+### 3. Run the tests
+
+```bash
+./mvnw test        # macOS / Linux
+.\mvnw.cmd test    # Windows
+```
+
+---
+
+## API overview
+
+### Rooms
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/rooms` | All rooms |
+| `GET` | `/rooms/{number}` | One room |
+| `POST` | `/rooms/{number}/clean` | Mark room as clean |
+| `POST` | `/rooms/{number}/dirty` | Mark room as dirty |
+| `POST` | `/rooms/{number}/inspect` | Mark room as inspected (only if clean) |
+
+### Reservations
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/reservations` | All reservations |
+| `POST` | `/reservations` | Create a reservation |
+| `GET` | `/reservations/{id}` | One reservation |
+| `POST` | `/reservations/{id}/check-in` | Check in |
+| `POST` | `/reservations/{id}/check-out` | Check out (balance must be zero) |
+| `GET` | `/reservations/arrivals?date=YYYY-MM-DD` | Arrivals (default: today) |
+| `GET` | `/reservations/departures?date=YYYY-MM-DD` | Departures (default: today) |
+| `GET` | `/reservations/in-house` | Guests currently in house |
+
+### Folio
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/reservations/{id}/folio` | Charges, payments, totals and balance |
+| `POST` | `/reservations/{id}/charges` | Post a charge |
+| `POST` | `/reservations/{id}/payments` | Record a payment |
+
+### Night audit
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/night-audit?date=YYYY-MM-DD` | Post room charges for the given business date |
+
+### Examples
+
+Create a reservation:
+
+```bash
+curl -X POST http://localhost:8080/reservations \
+  -H "Content-Type: application/json" \
+  -d '{
+        "firstName": "Elena",
+        "lastName": "Ivanova",
+        "email": null,
+        "phone": null,
+        "roomNumber": "101",
+        "arrivalDate": "2026-12-01",
+        "departureDate": "2026-12-04",
+        "ratePerNight": 85.00
+      }'
+```
+
+Post a charge:
+
+```bash
+curl -X POST http://localhost:8080/reservations/{id}/charges \
+  -H "Content-Type: application/json" \
+  -d '{ "type": "EXTRA", "description": "Minibar", "amount": 12.50 }'
+```
+
+Error example (room already booked for those dates):
+
+```json
+HTTP 409 Conflict
+{ "message": "Room 204 is not available for these dates" }
+```
+
+---
+
+## How I work on this project
+
+The project is developed like in a team:
+- every change starts as a **ticket** (`PMS-1`, `PMS-2`, ...)
+- each ticket has its own **branch** (`feature/PMS-12-post-reservation`)
+- changes are merged through **pull requests** with a description of what changed, why, and how it was tested
+- commits follow the format `PMS-12: Add POST /reservations with 400/409 error handling`
+
+---
+
+## Author
+
+**Diana Koropetska** | Entry Level Software Engineer
+
+- GitHub: [diadalv](https://github.com/diadalv)
+- LinkedIn: [diadalv](https://www.linkedin.com/in/diadalv/)

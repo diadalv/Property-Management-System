@@ -31,3 +31,13 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Secrets ###
+.env
+.env.*
+
+### Logs ###
+*.log
+
+### Windows ###
+Thumbs.db
