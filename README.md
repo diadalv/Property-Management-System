@@ -51,6 +51,7 @@ I worked for several years in hotel operations, using **OPERA PMS** at the front
 | Testing | JUnit 5 |
 | Version control | Git & GitHub (ticket-based workflow with pull requests) |
 | CI | GitHub Actions (tests run on every pull request) |
+| Containers | Docker, Docker Compose |
 
 ---
 
@@ -130,41 +131,46 @@ The schema is created automatically on startup from `src/main/resources/schema.s
 
 ## Getting started
 
-### Prerequisites
-- Java 25
-- Docker
+### Option 1: Run everything with Docker Compose (recommended)
 
-Maven does not need to be installed: the project includes the Maven Wrapper (`mvnw` / `mvnw.cmd`).
-
-### 1. Start the database
+The only requirement is **Docker**.
 
 ```bash
-docker run -d --name pms-oracle -p 1521:1521 \
-  -e ORACLE_PASSWORD=oracle \
-  -e APP_USER=pms -e APP_USER_PASSWORD=pms \
-  -v pms-oracle-data:/opt/oracle/oradata \
-  gvenzl/oracle-free:slim
+docker compose up --build
 ```
 
-Wait until the database is ready:
+This starts two containers: the Oracle database and the application. The application waits until the database is healthy before it starts. The first start takes a few minutes, while the database is initialized.
+
+The API is available at `http://localhost:8080`. On the first start, sample rooms and reservations are created.
+
+To stop:
 
 ```bash
-docker logs -f pms-oracle
-# wait for: DATABASE IS READY TO USE!
+docker compose down       # stops the containers, keeps the data
+docker compose down -v    # also deletes the database volume
 ```
 
-### 2. Run the application
+### Option 2: Run the application locally (for development)
+
+Prerequisites: **Java 25** and **Docker**. Maven does not need to be installed: the project includes the Maven Wrapper (`mvnw` / `mvnw.cmd`).
+
+1. Start only the database:
+
+```bash
+docker compose up -d oracle
+docker compose ps          # wait until the status is "healthy"
+```
+
+2. Run the application:
 
 ```bash
 ./mvnw spring-boot:run        # macOS / Linux
 .\mvnw.cmd spring-boot:run    # Windows
 ```
 
-The API is available at `http://localhost:8080`. On the first start, sample rooms and reservations are created.
+> The database connection is configured in `application.properties` with local defaults. It can be overridden with environment variables (`SPRING_DATASOURCE_URL`, `DB_USERNAME`, `DB_PASSWORD`). Docker Compose uses this to point the application to the `oracle` container.
 
-> The database credentials are read from the environment variables `DB_USERNAME` and `DB_PASSWORD`, with local defaults for development.
-
-### 3. Run the tests
+### Run the tests
 
 ```bash
 ./mvnw test        # macOS / Linux

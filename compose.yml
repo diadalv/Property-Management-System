@@ -1,0 +1,33 @@
+services:
+
+  oracle:
+    image: gvenzl/oracle-free:slim
+    environment:
+      ORACLE_PASSWORD: oracle
+      APP_USER: pms
+      APP_USER_PASSWORD: pms
+    ports:
+      - "127.0.0.1:1521:1521"
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  app:
+    build: .
+    depends_on:
+      oracle:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:oracle:thin:@oracle:1521/FREEPDB1
+      DB_USERNAME: pms
+      DB_PASSWORD: pms
+    ports:
+      - "8080:8080"
+
+volumes:
+  oracle-data:
