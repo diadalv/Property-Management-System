@@ -1,5 +1,7 @@
 # Hotel PMS — Property Management System
 
+[![CI](https://github.com/diadalv/Property-Management-System/actions/workflows/ci.yml/badge.svg)](https://github.com/diadalv/Property-Management-System/actions/workflows/ci.yml)
+
 A hotel **Property Management System** built with **Java** and **Spring Boot**, backed by an **Oracle Database**.
 It covers the core daily operations of a hotel: reservations, check-in and check-out, guest folios (charges and payments), housekeeping, and the night audit.
 
@@ -48,6 +50,7 @@ I worked for several years in hotel operations, using **OPERA PMS** at the front
 | Build | Maven |
 | Testing | JUnit 5 |
 | Version control | Git & GitHub (ticket-based workflow with pull requests) |
+| CI | GitHub Actions (tests run on every pull request) |
 
 ---
 
@@ -248,6 +251,7 @@ The project is developed like in a team:
 - each ticket has its own **branch** (`feature/PMS-12-post-reservation`)
 - changes are merged through **pull requests** with a description of what changed, why, and how it was tested
 - commits follow the format `PMS-12: Add POST /reservations with 400/409 error handling`
+- every pull request runs the tests automatically with **GitHub Actions**
 
 ---
 
