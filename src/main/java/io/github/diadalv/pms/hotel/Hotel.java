@@ -10,6 +10,7 @@ import io.github.diadalv.pms.reservation.ReservationRepository;
 import io.github.diadalv.pms.reservation.ReservationStatus;
 import io.github.diadalv.pms.room.Room;
 import io.github.diadalv.pms.room.RoomNotFoundException;
+import io.github.diadalv.pms.room.RoomRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -19,20 +20,24 @@ public class Hotel {
     private final String name;
     private final Map<String, Room> rooms = new LinkedHashMap<>();
     private final ReservationRepository reservationRepository;
+    private final RoomRepository roomRepository;
     private final Set<LocalDate> auditedDates = new HashSet<>();
 
-    public Hotel(String name, ReservationRepository reservationRepository) {
+    public Hotel(String name, ReservationRepository reservationRepository, RoomRepository roomRepository) {
         this.name = name;
         this.reservationRepository = reservationRepository;
+        this.roomRepository = roomRepository;
+        for (Room room : roomRepository.findAll()) {
+            rooms.put(room.getNumber(), room);
+        }
     }
-
-    // ===== Δωμάτια =====
 
     public void addRoom(Room room) {
         if (rooms.containsKey(room.getNumber())) {
             throw new IllegalArgumentException("Room " + room.getNumber() + " already exists");
         }
         rooms.put(room.getNumber(), room);
+        roomRepository.save(room);
     }
 
     public List<Room> getRooms() {
@@ -47,14 +52,33 @@ public class Hotel {
         return room;
     }
 
+    public Room markRoomClean(String number) {
+        Room room = findRoom(number);
+        room.markClean();
+        roomRepository.save(room);
+        return room;
+    }
+
+    public Room markRoomDirty(String number) {
+        Room room = findRoom(number);
+        room.markDirty();
+        roomRepository.save(room);
+        return room;
+    }
+
+    public Room markRoomInspected(String number) {
+        Room room = findRoom(number);
+        room.markInspected();
+        roomRepository.save(room);
+        return room;
+    }
+
     public Reservation findReservation(UUID id) {
         return getAllReservations().stream()
                 .filter(reservation -> reservation.getId().equals(id))
                 .findFirst()
                 .orElseThrow(() -> new ReservationNotFoundException(id));
     }
-
-    // ===== Κρατήσεις =====
 
     public boolean isAvailable(Room room, LocalDate arrival, LocalDate departure) {
         for (Reservation reservation : reservationRepository.findAll()) {
@@ -79,8 +103,6 @@ public class Hotel {
     public List<Reservation> getAllReservations() {
         return reservationRepository.findAll();
     }
-
-    // ===== Αφίξεις / In-house / Αναχωρήσεις =====
 
     public List<Reservation> getArrivals(LocalDate date) {
         return reservationRepository.findAll().stream()
@@ -113,6 +135,7 @@ public class Hotel {
         Reservation reservation = findReservation(id);
         reservation.checkOut();
         reservationRepository.save(reservation);
+        roomRepository.save(reservation.getRoom());
         return reservation;
     }
 
@@ -129,10 +152,6 @@ public class Hotel {
         reservationRepository.save(reservation);
         return reservation.getFolio();
     }
-
-    // ===== Night audit =====
-
-    // ===== Night audit =====
 
     public void runNightAudit(LocalDate businessDate) {
         if (auditedDates.contains(businessDate)) {
@@ -152,16 +171,13 @@ public class Hotel {
                     "Room " + reservation.getRoom().getNumber() + " - night of " + businessDate,
                     reservation.getRatePerNight()
             );
-            reservationRepository.save(reservation);     // ← ΝΕΟ: αποθήκευσε τη χρέωση στη βάση
+            reservationRepository.save(reservation);
         }
 
         auditedDates.add(businessDate);
     }
 
-    // ===== Getters =====
-
     public String getName() {
         return name;
     }
 }
-

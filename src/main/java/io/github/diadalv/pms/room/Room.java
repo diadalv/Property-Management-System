@@ -1,16 +1,25 @@
 package io.github.diadalv.pms.room;
 
 public class Room {
-    private String number;
-    private int floor;
-    private String type;
+    private final String number;
+    private final int floor;
+    private final String type;
     private HousekeepingStatus housekeepingStatus;
 
     public Room(String number, int floor, String type) {
+        this(number, floor, type, HousekeepingStatus.CLEAN);
+    }
+
+
+    private Room(String number, int floor, String type, HousekeepingStatus housekeepingStatus) {
         this.number = number;
         this.floor = floor;
         this.type = type;
-        this.housekeepingStatus = HousekeepingStatus.CLEAN;
+        this.housekeepingStatus = housekeepingStatus;
+    }
+
+    public static Room restore(String number, int floor, String type, HousekeepingStatus housekeepingStatus) {
+        return new Room(number, floor, type, housekeepingStatus);
     }
 
     public String getNumber() {
@@ -59,5 +68,4 @@ public class Room {
     public int hashCode() {
         return number.hashCode();
     }
-
 }

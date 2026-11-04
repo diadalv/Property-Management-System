@@ -28,6 +28,7 @@ I worked for several years in hotel operations, using **OPERA PMS** at the front
 - Mark rooms as clean, dirty or inspected
 - A room can only be inspected when it is clean
 - Check-out automatically marks the room as dirty
+- Housekeeping status is saved in the database, so it survives restarts
 
 **Night audit**
 - Posts the room charge for every in-house guest for a given business date
@@ -77,9 +78,9 @@ Hotel (service)     coordinates the use cases: find → apply business rule → 
 Domain model        Reservation, Room, Folio, Charge, Payment — all business rules live here
    │
    ▼
-Repository          ReservationRepository interface, with two implementations:
-                     • JpaReservationRepository  → Oracle (used by the application)
-                     • InMemoryReservationRepository → in memory (used by unit tests)
+Repository          ReservationRepository and RoomRepository interfaces, each with two implementations:
+                     • Jpa...Repository      → Oracle (used by the application)
+                     • InMemory...Repository → in memory (used by unit tests)
    │
    ▼
 Persistence         JPA entities + mapper (domain ↔ entity) → Hibernate → Oracle
@@ -95,8 +96,8 @@ Persistence         JPA entities + mapper (domain ↔ entity) → Hibernate → 
 - **DTOs for the API.**
   The API never exposes internal classes. Request and response records (`CreateReservationRequest`, `ReservationResponse`, `FolioResponse`...) define the API contract, so the internal model can change without breaking clients.
 
-- **A repository interface with two implementations.**
-  The `Hotel` depends only on the `ReservationRepository` interface. Switching from in-memory storage to Oracle was a one-line change in the configuration, and the in-memory version is kept to keep unit tests fast and independent of a database.
+- **Repository interfaces with two implementations.**
+  The `Hotel` depends only on the `ReservationRepository` and `RoomRepository` interfaces. Switching from in-memory storage to Oracle was a one-line change in the configuration, and the in-memory versions are kept to keep unit tests fast and independent of a database.
 
 - **Separate JPA entities and a mapper.**
   Domain classes stay free of persistence concerns (no-argument constructors, non-final fields, annotations). The trade-off is more code: the mapper converts between domain objects and entities, and only inserts new charges when saving.

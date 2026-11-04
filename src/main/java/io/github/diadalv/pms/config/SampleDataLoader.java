@@ -3,8 +3,6 @@ package io.github.diadalv.pms.config;
 import io.github.diadalv.pms.billing.ChargeType;
 import io.github.diadalv.pms.guest.Guest;
 import io.github.diadalv.pms.hotel.Hotel;
-import io.github.diadalv.pms.persistence.RoomEntity;
-import io.github.diadalv.pms.persistence.RoomJpaRepository;
 import io.github.diadalv.pms.reservation.Reservation;
 import io.github.diadalv.pms.reservation.ReservationRepository;
 import io.github.diadalv.pms.room.Room;
@@ -19,27 +17,21 @@ import java.time.LocalDate;
 public class SampleDataLoader implements ApplicationRunner {
 
     private final Hotel hotel;
-    private final RoomJpaRepository roomJpaRepository;
     private final ReservationRepository reservationRepository;
 
-    public SampleDataLoader(Hotel hotel, RoomJpaRepository roomJpaRepository,
-                            ReservationRepository reservationRepository) {
+    public SampleDataLoader(Hotel hotel, ReservationRepository reservationRepository) {
         this.hotel = hotel;
-        this.roomJpaRepository = roomJpaRepository;
         this.reservationRepository = reservationRepository;
     }
 
     @Override
     public void run(ApplicationArguments args) {
-        // 1. Τα δωμάτια στη βάση (μόνο όσα λείπουν)
-        for (Room room : hotel.getRooms()) {
-            if (!roomJpaRepository.existsById(room.getNumber())) {
-                roomJpaRepository.save(new RoomEntity(room.getNumber(), room.getFloor(),
-                        room.getType(), room.getHousekeepingStatus().name()));
-            }
+        if (hotel.getRooms().isEmpty()) {
+            hotel.addRoom(new Room("101", 1, "Single"));
+            hotel.addRoom(new Room("204", 2, "Double"));
+            hotel.addRoom(new Room("301", 3, "Suite"));
         }
 
-        // 2. Κρατήσεις-παράδειγμα, ΜΟΝΟ αν δεν υπάρχει καμία
         if (!hotel.getAllReservations().isEmpty()) {
             return;
         }
