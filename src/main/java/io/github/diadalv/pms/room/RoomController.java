@@ -31,22 +31,16 @@ public class RoomController {
 
     @PostMapping("/rooms/{number}/clean")
     public RoomResponse markClean(@PathVariable String number) {
-        Room room = hotel.findRoom(number);
-        room.markClean();
-        return RoomResponse.from(room);
+        return RoomResponse.from(hotel.markRoomClean(number));
     }
 
     @PostMapping("/rooms/{number}/dirty")
-    public RoomResponse markDirty(@PathVariable String number){
-        Room room = hotel.findRoom(number);
-        room.markDirty();
-        return RoomResponse.from(room);
+    public RoomResponse markDirty(@PathVariable String number) {
+        return RoomResponse.from(hotel.markRoomDirty(number));
     }
 
     @PostMapping("/rooms/{number}/inspect")
     public RoomResponse markInspect(@PathVariable String number) {
-        Room room = hotel.findRoom(number);
-        room.markInspected();
-        return RoomResponse.from(room);
+        return RoomResponse.from(hotel.markRoomInspected(number));
     }
 }

@@ -3,6 +3,8 @@ package io.github.diadalv.pms.hotel;
 import io.github.diadalv.pms.guest.Guest;
 import io.github.diadalv.pms.reservation.InMemoryReservationRepository;
 import io.github.diadalv.pms.reservation.Reservation;
+import io.github.diadalv.pms.room.HousekeepingStatus;
+import io.github.diadalv.pms.room.InMemoryRoomRepository;
 import io.github.diadalv.pms.room.Room;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +17,7 @@ class HotelTest {
 
     @Test
     void cannotBookRoomForOverlappingDates() {
-        Hotel hotel = new Hotel("Test Hotel", new InMemoryReservationRepository());
+        Hotel hotel = new Hotel("Test Hotel", new InMemoryReservationRepository(), new InMemoryRoomRepository());
         Room room = new Room("204", 2, "Double");
         hotel.addRoom(room);
 
@@ -31,7 +33,7 @@ class HotelTest {
 
     @Test
     void sameDayTurnoverIsAllowed() {
-        Hotel hotel = new Hotel("Test Hotel", new InMemoryReservationRepository());
+        Hotel hotel = new Hotel("Test Hotel", new InMemoryReservationRepository(), new InMemoryRoomRepository());
         Room room = new Room("204", 2, "Double");
         hotel.addRoom(room);
 
@@ -45,7 +47,7 @@ class HotelTest {
 
     @Test
     void secondNightAuditForSameDateIsRejected() {
-        Hotel hotel = new Hotel("Test Hotel", new InMemoryReservationRepository());
+        Hotel hotel = new Hotel("Test Hotel", new InMemoryReservationRepository(), new InMemoryRoomRepository());
         Room room = new Room("204", 2, "Double");
         hotel.addRoom(room);
 
@@ -60,5 +62,33 @@ class HotelTest {
         assertThrows(IllegalStateException.class, () -> hotel.runNightAudit(auditDate));
 
         assertEquals(1, mariaReservation.getFolio().getCharges().size());
+    }
+
+    @Test
+    void roomStatusIsSavedAndLoadedAgain() {
+        InMemoryRoomRepository roomRepository = new InMemoryRoomRepository();
+        Hotel hotel = new Hotel("Test Hotel", new InMemoryReservationRepository(), roomRepository);
+        hotel.addRoom(new Room("101", 1, "Single"));
+
+        hotel.markRoomDirty("101");
+
+        Hotel restartedHotel = new Hotel("Test Hotel", new InMemoryReservationRepository(), roomRepository);
+        assertEquals(HousekeepingStatus.DIRTY, restartedHotel.findRoom("101").getHousekeepingStatus());
+    }
+
+    @Test
+    void checkOutSavesRoomAsDirty() {
+        InMemoryRoomRepository roomRepository = new InMemoryRoomRepository();
+        Hotel hotel = new Hotel("Test Hotel", new InMemoryReservationRepository(), roomRepository);
+        Room room = new Room("204", 2, "Double");
+        hotel.addRoom(room);
+
+        Guest maria = new Guest("Maria", "Papadopoulou", null, null);
+        Reservation reservation = hotel.book(maria, room, LocalDate.of(2026, 11, 5), LocalDate.of(2026, 11, 8), new BigDecimal("120.00"));
+        hotel.checkIn(reservation.getId());
+        hotel.checkOut(reservation.getId());
+
+        Hotel restartedHotel = new Hotel("Test Hotel", new InMemoryReservationRepository(), roomRepository);
+        assertEquals(HousekeepingStatus.DIRTY, restartedHotel.findRoom("204").getHousekeepingStatus());
     }
 }
