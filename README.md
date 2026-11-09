@@ -38,6 +38,11 @@ I worked for several years in hotel operations, using **OPERA PMS** at the front
 - REST API with JSON
 - Clear error responses: `400` invalid data, `404` not found, `409` business rule conflict
 
+**Security**
+- Login with HTTP Basic and role-based access: `MANAGER`, `RECEPTION`, `HOUSEKEEPING`
+- `401` without login, `403` when the role is not allowed
+- Passwords are hashed with BCrypt
+
 ---
 
 ## Tech stack
@@ -47,6 +52,7 @@ I worked for several years in hotel operations, using **OPERA PMS** at the front
 | Language | Java 25 |
 | Framework | Spring Boot 4 (Spring Web, Spring Data JPA) |
 | Persistence | Hibernate (JPA) |
+| Security | Spring Security (HTTP Basic, role-based access, BCrypt) |
 | Database | Oracle AI Database 26ai Free, running in Docker |
 | Build | Maven |
 | Testing | JUnit 5, Mockito, MockMvc, Testcontainers |
@@ -124,6 +130,28 @@ Integration tests start an Oracle container automatically, so Docker must be run
 
 ---
 
+## Security
+
+Access is based on the employee's role, following the principle of least privilege:
+
+| Endpoint | MANAGER | RECEPTION | HOUSEKEEPING |
+|---|:-:|:-:|:-:|
+| `/rooms/**` | ✅ | ✅ | ✅ |
+| `/reservations/**` | ✅ | ✅ | ❌ |
+| `POST /night-audit` | ✅ | ❌ | ❌ |
+
+Users for local development (in memory, for demonstration only):
+
+| Username | Password | Role |
+|---|---|---|
+| `manager` | `manager123` | MANAGER |
+| `reception` | `reception123` | RECEPTION |
+| `housekeeping` | `housekeeping123` | HOUSEKEEPING |
+
+In a production system, users would be stored in a database or an identity provider, and the API would run over HTTPS.
+
+---
+
 ## Database schema
 
 ```
@@ -193,6 +221,7 @@ docker compose ps          # wait until the status is "healthy"
 ```
 
 > Docker must be running: the integration tests start their own Oracle container with Testcontainers.
+
 ---
 
 ## API overview
@@ -236,6 +265,7 @@ Create a reservation:
 
 ```bash
 curl -X POST http://localhost:8080/reservations \
+  -u reception:reception123 \
   -H "Content-Type: application/json" \
   -d '{
         "firstName": "Elena",
@@ -253,6 +283,7 @@ Post a charge:
 
 ```bash
 curl -X POST http://localhost:8080/reservations/{id}/charges \
+  -u reception:reception123 \
   -H "Content-Type: application/json" \
   -d '{ "type": "EXTRA", "description": "Minibar", "amount": 12.50 }'
 ```
@@ -274,6 +305,7 @@ The project is developed like in a team:
 - changes are merged through **pull requests** with a description of what changed, why, and how it was tested
 - commits follow the format `PMS-12: Add POST /reservations with 400/409 error handling`
 - every pull request runs the tests automatically with **GitHub Actions**
+- `main` is protected: changes go through pull requests, and merging is blocked until CI passes
 
 ---
 
