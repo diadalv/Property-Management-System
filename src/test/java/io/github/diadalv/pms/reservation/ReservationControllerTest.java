@@ -1,12 +1,15 @@
 package io.github.diadalv.pms.reservation;
 
+import io.github.diadalv.pms.config.SecurityConfig;
 import io.github.diadalv.pms.guest.Guest;
 import io.github.diadalv.pms.hotel.Hotel;
 import io.github.diadalv.pms.room.Room;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -22,6 +25,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ReservationController.class)
+@Import(SecurityConfig.class)
+@WithMockUser(roles = "RECEPTION")
 class ReservationControllerTest {
 
     private static final String REQUEST_JSON = """
@@ -95,5 +100,12 @@ class ReservationControllerTest {
         mockMvc.perform(get("/reservations/" + id))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Reservation with ID: " + id + " does not exist."));
+    }
+
+    @Test
+    @WithMockUser(roles = "HOUSEKEEPING")
+    void housekeepingCannotSeeReservations() throws Exception {
+        mockMvc.perform(get("/reservations"))
+                .andExpect(status().isForbidden());
     }
 }

@@ -1,9 +1,13 @@
 package io.github.diadalv.pms.room;
 
+import io.github.diadalv.pms.config.SecurityConfig;
 import io.github.diadalv.pms.hotel.Hotel;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -14,6 +18,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(RoomController.class)
+@Import(SecurityConfig.class)
+@WithMockUser(roles = "HOUSEKEEPING")
 class RoomControllerTest {
 
     @Autowired
@@ -60,5 +66,12 @@ class RoomControllerTest {
         mockMvc.perform(post("/rooms/101/clean"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.housekeepingStatus").value("CLEAN"));
+    }
+
+    @Test
+    @WithAnonymousUser
+    void requestWithoutLoginReturns401() throws Exception {
+        mockMvc.perform(get("/rooms/101"))
+                .andExpect(status().isUnauthorized());
     }
 }
