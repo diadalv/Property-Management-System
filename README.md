@@ -49,7 +49,7 @@ I worked for several years in hotel operations, using **OPERA PMS** at the front
 | Persistence | Hibernate (JPA) |
 | Database | Oracle AI Database 26ai Free, running in Docker |
 | Build | Maven |
-| Testing | JUnit 5 |
+| Testing | JUnit 5, Mockito, MockMvc, Testcontainers |
 | Version control | Git & GitHub (ticket-based workflow with pull requests) |
 | CI | GitHub Actions (tests run on every pull request) |
 | Containers | Docker, Docker Compose |
@@ -107,6 +107,20 @@ Persistence         JPA entities + mapper (domain ↔ entity) → Hibernate → 
 
 - **Action endpoints for state changes.**
   Check-in, check-out and housekeeping actions are `POST` endpoints such as `POST /reservations/{id}/check-in`, instead of letting the client set a status directly. The client requests the action, and the domain decides whether it is allowed.
+
+---
+
+## Testing
+
+The tests follow the test pyramid: many fast unit tests, fewer API tests, and a small number of integration tests with a real database.
+
+| Level | What it checks | Tools | Example |
+|---|---|---|---|
+| Unit tests | Business rules in the domain model and the `Hotel` service | JUnit 5, in-memory repositories | No overbooking, no check-out with an open balance |
+| API tests | URLs, HTTP status codes, JSON responses and error handling | `@WebMvcTest`, MockMvc, Mockito | `POST /reservations` returns `409` when the room is already booked |
+| Integration tests | Persistence with a real Oracle database: schema, entities, mappers | Testcontainers, `@SpringBootTest` | Room status is saved in Oracle and loaded again |
+
+Integration tests start an Oracle container automatically, so Docker must be running. All tests run on every pull request with GitHub Actions.
 
 ---
 
@@ -178,6 +192,7 @@ docker compose ps          # wait until the status is "healthy"
 .\mvnw.cmd test    # Windows
 ```
 
+> Docker must be running: the integration tests start their own Oracle container with Testcontainers.
 ---
 
 ## API overview
