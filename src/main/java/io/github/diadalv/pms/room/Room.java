@@ -10,7 +10,6 @@ public class Room {
         this(number, floor, type, HousekeepingStatus.CLEAN);
     }
 
-
     private Room(String number, int floor, String type, HousekeepingStatus housekeepingStatus) {
         this.number = number;
         this.floor = floor;
