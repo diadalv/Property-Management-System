@@ -18,7 +18,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalStateException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    public ErrorResponse overBooking(IllegalStateException e) {return new ErrorResponse(e.getMessage()); }
+    public ErrorResponse handleConflict(IllegalStateException e) {return new ErrorResponse(e.getMessage()); }
 
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
